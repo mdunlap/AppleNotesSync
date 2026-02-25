@@ -6,6 +6,7 @@ Reads notes from the local macOS Apple Notes database.
 import gzip
 import os
 import sqlite3
+import zlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -95,16 +96,32 @@ def _extract_text_from_protobuf(data: bytes) -> str:
     """Extract note text from Apple Notes gzipped protobuf data.
 
     Apple Notes uses a CRDT-based protobuf format (Mergeable). The note text
-    is stored in field 2 of the root message, which contains an attributed
-    string sub-message. Field 2 of that contains a Note sub-message, and
-    field 3 of that has the paragraph-level text runs.
+    is typically stored via root -> field 2 -> field 3 -> field 2 path.
+    If the structured parse returns empty, falls back to extracting printable
+    text strings from the raw decompressed data.
     """
     try:
         decompressed = gzip.decompress(data)
     except Exception:
-        return ""
+        try:
+            decompressed = zlib.decompress(data)
+        except Exception:
+            return ""
 
-    # Navigate: root -> field 2 (NoteStoreProto) -> field 3 (Document)
+    text = _try_structured_parse(decompressed)
+    if not text:
+        text = _fallback_extract_text(decompressed)
+
+    # Clean up the extracted text
+    text = text.replace("\u2028", "\n")   # Line Separator -> newline
+    text = text.replace("\ufffc", "")     # Object Replacement Character -> remove
+    text = text.strip()                   # Strip leading/trailing whitespace
+
+    return text
+
+
+def _try_structured_parse(decompressed: bytes) -> str:
+    """Try structured protobuf parse: root -> field 2 -> field 3 -> field 2."""
     root = _parse_protobuf(decompressed)
     if 2 not in root:
         return ""
@@ -127,6 +144,23 @@ def _extract_text_from_protobuf(data: bytes) -> str:
                     pass
 
     return "\n".join(text_parts) if text_parts else ""
+
+
+def _fallback_extract_text(decompressed: bytes) -> str:
+    """Fallback: extract printable text strings from raw decompressed data.
+
+    Scans for sequences of printable UTF-8 characters (minimum 4 chars)
+    and joins them together. Used when structured protobuf parsing fails.
+    """
+    import re
+    # Try decoding as UTF-8, replacing errors
+    raw_text = decompressed.decode("utf-8", errors="replace")
+    # Match runs of printable characters (letters, digits, punctuation, spaces)
+    # but not control characters (except newline/tab)
+    parts = re.findall(r'[\w\s.,;:!?\'\"()\-\u00C0-\uFFFF]{4,}', raw_text)
+    if not parts:
+        return ""
+    return " ".join(parts).strip()
 
 
 def _get_connection() -> sqlite3.Connection:

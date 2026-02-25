@@ -2,6 +2,7 @@ package com.maxdunlap.applenotessync.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -9,8 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -23,23 +26,28 @@ fun NoteDetailScreen(
     onBack: () -> Unit,
 ) {
     val detailState by viewModel.noteDetailState.collectAsState()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     LaunchedEffect(noteId) {
         viewModel.loadNoteDetail(noteId)
     }
 
+    val titleText = when (val state = detailState) {
+        is UiState.Success -> state.data.title
+        else -> "Note"
+    }
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text("Note") },
+            LargeTopAppBar(
+                title = { Text(titleText) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                ),
+                scrollBehavior = scrollBehavior,
             )
         }
     ) { padding ->
@@ -69,37 +77,35 @@ fun NoteDetailScreen(
             }
             is UiState.Success -> {
                 val note = state.data
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = note.title,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row {
+                SelectionContainer {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp)
+                    ) {
+                        Row {
+                            Text(
+                                text = note.folder,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = formatDetailDate(note.modified),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                         Text(
-                            text = note.folder,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.tertiary,
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = formatDetailDate(note.modified),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = note.body,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                lineHeight = 28.sp,
+                            ),
                         )
                     }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                    Text(
-                        text = note.body,
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
                 }
             }
         }

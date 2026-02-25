@@ -1,6 +1,7 @@
 package com.maxdunlap.applenotessync.data
 
-class NotesRepository(private val api: NotesApi = NotesApi()) {
+class NotesRepository(baseUrl: String) {
+    private val api = NotesApi(baseUrl)
 
     suspend fun getFolders(): Result<List<Folder>> = runCatching {
         api.getFolders()

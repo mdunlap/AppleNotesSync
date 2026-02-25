@@ -16,7 +16,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        buildConfigField("String", "SERVER_URL", "\"http://192.168.0.1:8642\"")
+        buildConfigField("String", "SERVER_URL", "\"http://192.168.0.207:8642\"")
     }
 
     buildFeatures {
@@ -48,9 +48,6 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-
-    // Pull to refresh
-    implementation("androidx.compose.material:material:1.7.6")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

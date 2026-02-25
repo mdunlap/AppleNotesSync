@@ -1,6 +1,5 @@
 package com.maxdunlap.applenotessync.data
 
-import com.maxdunlap.applenotessync.BuildConfig
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.android.*
@@ -42,7 +41,7 @@ data class Folder(
     val note_count: Int,
 )
 
-class NotesApi(private val baseUrl: String = BuildConfig.SERVER_URL) {
+class NotesApi(private val baseUrl: String) {
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })

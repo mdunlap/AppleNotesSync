@@ -2,9 +2,14 @@ package com.maxdunlap.applenotessync.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,10 +26,14 @@ import java.time.format.DateTimeFormatter
 fun NotesListScreen(
     viewModel: NotesViewModel = viewModel(),
     onNoteClick: (Int) -> Unit,
+    onSettingsClick: () -> Unit = {},
 ) {
-    val uiState by viewModel.notesState.collectAsState()
+    val uiState by viewModel.filteredNotes.collectAsState()
     val folders by viewModel.foldersState.collectAsState()
     val selectedFolder by viewModel.selectedFolder.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    var query by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadFolders()
@@ -33,12 +42,27 @@ fun NotesListScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Apple Notes") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                ),
-            )
+            SearchBar(
+                inputField = {
+                    SearchBarDefaults.InputField(
+                        query = query,
+                        onQueryChange = { query = it; viewModel.setSearchQuery(it) },
+                        onSearch = { expanded = false },
+                        expanded = expanded,
+                        onExpandedChange = { expanded = it },
+                        placeholder = { Text("Search notes") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                        trailingIcon = {
+                            IconButton(onClick = onSettingsClick) {
+                                Icon(Icons.Default.Settings, contentDescription = "Settings")
+                            }
+                        },
+                    )
+                },
+                expanded = expanded,
+                onExpandedChange = { expanded = it },
+                modifier = Modifier.fillMaxWidth(),
+            ) {}
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
@@ -84,9 +108,24 @@ fun NotesListScreen(
                     }
                 }
                 is UiState.Success -> {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(state.data, key = { it.id }) { note ->
-                            NoteRow(note = note, onClick = { onNoteClick(note.id) })
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = { viewModel.refresh() },
+                    ) {
+                        LazyVerticalStaggeredGrid(
+                            columns = StaggeredGridCells.Fixed(2),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                            verticalItemSpacing = 8.dp,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            items(state.data, key = { it.id }) { note ->
+                                NoteCard(
+                                    note = note,
+                                    onClick = { onNoteClick(note.id) },
+                                    modifier = Modifier.animateItem(),
+                                )
+                            }
                         }
                     }
                 }
@@ -96,17 +135,16 @@ fun NotesListScreen(
 }
 
 @Composable
-fun NoteRow(note: NoteListItem, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
+fun NoteCard(note: NoteListItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    ElevatedCard(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
+        colors = CardDefaults.elevatedCardColors(
             containerColor = if (note.is_pinned)
                 MaterialTheme.colorScheme.secondaryContainer
             else
-                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -122,18 +160,19 @@ fun NoteRow(note: NoteListItem, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                Text(
-                    text = formatDate(note.modified),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
+            Text(
+                text = formatDate(note.modified),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
             if (note.snippet.isNotBlank()) {
                 Text(
                     text = note.snippet,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
+                    maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp),
                 )
