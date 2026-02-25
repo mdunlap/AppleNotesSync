@@ -1,4 +1,4 @@
-package com.maxdunlap.applenotessync.data
+package com.applenotesync.app.data
 
 import io.ktor.client.*
 import io.ktor.client.call.*

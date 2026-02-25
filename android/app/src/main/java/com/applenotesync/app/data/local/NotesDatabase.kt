@@ -1,4 +1,4 @@
-package com.maxdunlap.applenotessync.data.local
+package com.applenotesync.app.data.local
 
 import android.content.Context
 import androidx.room.Database

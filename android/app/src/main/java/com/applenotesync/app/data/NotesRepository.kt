@@ -1,8 +1,8 @@
-package com.maxdunlap.applenotessync.data
+package com.applenotesync.app.data
 
-import com.maxdunlap.applenotessync.data.local.NotesDao
-import com.maxdunlap.applenotessync.data.local.toApi
-import com.maxdunlap.applenotessync.data.local.toCached
+import com.applenotesync.app.data.local.NotesDao
+import com.applenotesync.app.data.local.toApi
+import com.applenotesync.app.data.local.toCached
 
 class NotesRepository(baseUrl: String, private val dao: NotesDao) {
     private val api = NotesApi(baseUrl)

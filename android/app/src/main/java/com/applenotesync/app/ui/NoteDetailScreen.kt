@@ -1,4 +1,4 @@
-package com.maxdunlap.applenotessync.ui
+package com.applenotesync.app.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

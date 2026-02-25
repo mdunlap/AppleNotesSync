@@ -1,4 +1,4 @@
-package com.maxdunlap.applenotessync
+package com.applenotesync.app
 
 import android.os.Build
 import android.os.Bundle
@@ -20,9 +20,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.maxdunlap.applenotessync.ui.NoteDetailScreen
-import com.maxdunlap.applenotessync.ui.NotesListScreen
-import com.maxdunlap.applenotessync.ui.SettingsScreen
+import com.applenotesync.app.ui.NoteDetailScreen
+import com.applenotesync.app.ui.NotesListScreen
+import com.applenotesync.app.ui.SettingsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

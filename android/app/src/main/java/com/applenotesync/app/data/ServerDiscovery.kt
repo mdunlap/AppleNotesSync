@@ -1,4 +1,4 @@
-package com.maxdunlap.applenotessync.data
+package com.applenotesync.app.data
 
 import android.content.Context
 import android.net.nsd.NsdManager

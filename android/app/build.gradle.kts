@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.maxdunlap.applenotessync"
+    namespace = "com.applenotesync.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.maxdunlap.applenotessync"
+        applicationId = "com.applenotesync.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

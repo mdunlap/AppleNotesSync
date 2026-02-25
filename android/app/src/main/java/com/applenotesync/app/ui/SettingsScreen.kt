@@ -1,4 +1,4 @@
-package com.maxdunlap.applenotessync.ui
+package com.applenotesync.app.ui
 
 import android.content.Context
 import androidx.compose.foundation.layout.*
@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.maxdunlap.applenotessync.data.ServerState
+import com.applenotesync.app.data.ServerState
 
 private const val PREFS_NAME = "apple_notes_sync"
 private const val KEY_SERVER_URL = "server_url"
@@ -116,5 +116,5 @@ fun SettingsScreen(
 fun getServerUrl(context: Context): String {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     val saved = prefs.getString(KEY_SERVER_URL, null)
-    return if (!saved.isNullOrBlank()) saved else com.maxdunlap.applenotessync.BuildConfig.SERVER_URL
+    return if (!saved.isNullOrBlank()) saved else com.applenotesync.app.BuildConfig.SERVER_URL
 }

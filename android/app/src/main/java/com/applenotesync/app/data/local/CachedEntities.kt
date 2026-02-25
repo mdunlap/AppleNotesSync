@@ -1,9 +1,9 @@
-package com.maxdunlap.applenotessync.data.local
+package com.applenotesync.app.data.local
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.maxdunlap.applenotessync.data.NoteDetail
-import com.maxdunlap.applenotessync.data.NoteListItem
+import com.applenotesync.app.data.NoteDetail
+import com.applenotesync.app.data.NoteListItem
 
 @Entity(tableName = "note_list_items")
 data class CachedNoteListItem(

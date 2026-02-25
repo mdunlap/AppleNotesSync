@@ -1,15 +1,15 @@
-package com.maxdunlap.applenotessync.ui
+package com.applenotesync.app.ui
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.maxdunlap.applenotessync.data.Folder
-import com.maxdunlap.applenotessync.data.NoteDetail
-import com.maxdunlap.applenotessync.data.NoteListItem
-import com.maxdunlap.applenotessync.data.NotesRepository
-import com.maxdunlap.applenotessync.data.ServerDiscovery
-import com.maxdunlap.applenotessync.data.ServerState
-import com.maxdunlap.applenotessync.data.local.NotesDatabase
+import com.applenotesync.app.data.Folder
+import com.applenotesync.app.data.NoteDetail
+import com.applenotesync.app.data.NoteListItem
+import com.applenotesync.app.data.NotesRepository
+import com.applenotesync.app.data.ServerDiscovery
+import com.applenotesync.app.data.ServerState
+import com.applenotesync.app.data.local.NotesDatabase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -161,7 +161,7 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun getEffectiveServerUrl(): String {
         val saved = getServerUrl(getApplication())
-        if (saved.isNotBlank() && saved != com.maxdunlap.applenotessync.BuildConfig.SERVER_URL) {
+        if (saved.isNotBlank() && saved != com.applenotesync.app.BuildConfig.SERVER_URL) {
             return saved
         }
         val discoveryState = serverDiscovery.state.value

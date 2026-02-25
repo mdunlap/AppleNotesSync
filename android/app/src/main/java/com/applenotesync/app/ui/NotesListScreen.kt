@@ -1,4 +1,4 @@
-package com.maxdunlap.applenotessync.ui
+package com.applenotesync.app.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,7 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.maxdunlap.applenotessync.data.NoteListItem
+import com.applenotesync.app.data.NoteListItem
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
