@@ -2,9 +2,8 @@ package com.maxdunlap.applenotessync.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -66,7 +65,6 @@ fun NotesListScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            // Folder filter chips
             if (folders is UiState.Success) {
                 val folderList = (folders as UiState.Success).data
                 ScrollableTabRow(
@@ -112,15 +110,12 @@ fun NotesListScreen(
                         isRefreshing = isRefreshing,
                         onRefresh = { viewModel.refresh() },
                     ) {
-                        LazyVerticalStaggeredGrid(
-                            columns = StaggeredGridCells.Fixed(2),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-                            verticalItemSpacing = 8.dp,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        LazyColumn(
                             modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 4.dp),
                         ) {
                             items(state.data, key = { it.id }) { note ->
-                                NoteCard(
+                                NoteRow(
                                     note = note,
                                     onClick = { onNoteClick(note.id) },
                                     modifier = Modifier.animateItem(),
@@ -135,19 +130,13 @@ fun NotesListScreen(
 }
 
 @Composable
-fun NoteCard(note: NoteListItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    ElevatedCard(
+fun NoteRow(note: NoteListItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = if (note.is_pinned)
-                MaterialTheme.colorScheme.secondaryContainer
-            else
-                MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (note.is_pinned) {
                     Text("📌 ", style = MaterialTheme.typography.bodySmall)
@@ -160,29 +149,30 @@ fun NoteCard(note: NoteListItem, onClick: () -> Unit, modifier: Modifier = Modif
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                Text(
+                    text = formatDate(note.modified),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-            Text(
-                text = formatDate(note.modified),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp),
-            )
             if (note.snippet.isNotBlank()) {
                 Text(
                     text = note.snippet,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 4,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 4.dp),
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
-            Text(
-                text = note.folder,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.tertiary,
-                modifier = Modifier.padding(top = 4.dp),
-            )
+            Row(modifier = Modifier.padding(top = 2.dp)) {
+                Text(
+                    text = note.folder,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
+            HorizontalDivider(modifier = Modifier.padding(top = 10.dp))
         }
     }
 }

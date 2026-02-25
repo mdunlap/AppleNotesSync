@@ -87,7 +87,7 @@ fun SettingsScreen(
                     serverUrl = it
                     saved = false
                 },
-                label = { Text("e.g. http://192.168.0.10:8642") },
+                label = { Text("e.g. http://192.168.x.x:8642") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )

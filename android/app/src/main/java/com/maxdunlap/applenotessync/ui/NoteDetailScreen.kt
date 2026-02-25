@@ -2,7 +2,7 @@ package com.maxdunlap.applenotessync.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -10,8 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,15 +28,42 @@ fun NoteDetailScreen(
     onBack: () -> Unit,
 ) {
     val detailState by viewModel.noteDetailState.collectAsState()
+    val syncStatus by viewModel.syncStatus.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    var editedBody by remember { mutableStateOf("") }
+    var bodySeeded by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(noteId) {
         viewModel.loadNoteDetail(noteId)
     }
 
+    // Seed editor when note first loads
+    LaunchedEffect(detailState) {
+        if (detailState is UiState.Success && !bodySeeded) {
+            editedBody = (detailState as UiState.Success).data.body
+            bodySeeded = true
+        }
+    }
+
+    // Request focus once body is seeded
+    LaunchedEffect(bodySeeded) {
+        if (bodySeeded) {
+            focusRequester.requestFocus()
+        }
+    }
+
     val titleText = when (val state = detailState) {
         is UiState.Success -> state.data.title
         else -> "Note"
+    }
+
+    val statusText = when (syncStatus) {
+        SyncStatus.Saving -> "Saving..."
+        SyncStatus.Saved -> "Saved"
+        SyncStatus.Error -> "Save failed"
+        SyncStatus.Idle -> null
     }
 
     Scaffold(
@@ -45,6 +74,19 @@ fun NoteDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (statusText != null) {
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (syncStatus == SyncStatus.Error)
+                                MaterialTheme.colorScheme.error
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(end = 16.dp),
+                        )
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -77,35 +119,43 @@ fun NoteDetailScreen(
             }
             is UiState.Success -> {
                 val note = state.data
-                SelectionContainer {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                            .verticalScroll(rememberScrollState())
-                            .padding(16.dp)
-                    ) {
-                        Row {
-                            Text(
-                                text = note.folder,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.tertiary,
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = formatDetailDate(note.modified),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp)
+                ) {
+                    Row {
                         Text(
-                            text = note.body,
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                lineHeight = 28.sp,
-                            ),
+                            text = note.folder,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = formatDetailDate(note.modified),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    BasicTextField(
+                        value = editedBody,
+                        onValueChange = {
+                            editedBody = it
+                            viewModel.debouncedSave(noteId, it)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 300.dp)
+                            .focusRequester(focusRequester),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            lineHeight = 28.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    )
                 }
             }
         }

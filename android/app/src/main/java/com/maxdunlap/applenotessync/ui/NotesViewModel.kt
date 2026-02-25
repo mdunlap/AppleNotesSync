@@ -9,7 +9,10 @@ import com.maxdunlap.applenotessync.data.NoteListItem
 import com.maxdunlap.applenotessync.data.NotesRepository
 import com.maxdunlap.applenotessync.data.ServerDiscovery
 import com.maxdunlap.applenotessync.data.ServerState
+import com.maxdunlap.applenotessync.data.local.NotesDatabase
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,11 +26,14 @@ sealed class UiState<out T> {
     data class Error(val message: String) : UiState<Nothing>()
 }
 
+enum class SyncStatus { Idle, Saving, Saved, Error }
+
 class NotesViewModel(application: Application) : AndroidViewModel(application) {
     val serverDiscovery = ServerDiscovery(application)
+    private val dao = NotesDatabase.getInstance(application).notesDao()
 
     private val repo: NotesRepository
-        get() = NotesRepository(getEffectiveServerUrl())
+        get() = NotesRepository(getEffectiveServerUrl(), dao)
 
     private val _notesState = MutableStateFlow<UiState<List<NoteListItem>>>(UiState.Loading)
     val notesState: StateFlow<UiState<List<NoteListItem>>> = _notesState
@@ -48,17 +54,33 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     val filteredNotes: StateFlow<UiState<List<NoteListItem>>> = combine(
-        _notesState, _searchQuery
-    ) { state, query ->
-        if (query.isBlank() || state !is UiState.Success) state
-        else UiState.Success(state.data.filter {
-            it.title.contains(query, ignoreCase = true) ||
-                it.snippet.contains(query, ignoreCase = true)
-        })
+        _notesState, _searchQuery, _selectedFolder
+    ) { state, query, folder ->
+        if (state !is UiState.Success) state
+        else {
+            var notes = state.data
+            // Hide "Recently Deleted" notes from the All tab
+            if (folder == null) {
+                notes = notes.filter { !it.folder.equals("Recently Deleted", ignoreCase = true) }
+            }
+            if (query.isNotBlank()) {
+                notes = notes.filter {
+                    it.title.contains(query, ignoreCase = true) ||
+                        it.snippet.contains(query, ignoreCase = true)
+                }
+            }
+            UiState.Success(notes)
+        }
     }.stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading)
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing
+
+    // Auto-save state
+    private val _syncStatus = MutableStateFlow(SyncStatus.Idle)
+    val syncStatus: StateFlow<SyncStatus> = _syncStatus
+
+    private var autoSaveJob: Job? = null
 
     init {
         serverDiscovery.startDiscovery()
@@ -107,6 +129,27 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
             repo.getNote(noteId).fold(
                 onSuccess = { _noteDetailState.value = UiState.Success(it) },
                 onFailure = { _noteDetailState.value = UiState.Error(it.message ?: "Unknown error") },
+            )
+        }
+    }
+
+    fun debouncedSave(noteId: Int, body: String) {
+        autoSaveJob?.cancel()
+        _syncStatus.value = SyncStatus.Idle
+        autoSaveJob = viewModelScope.launch {
+            delay(1500) // 1.5s debounce
+            _syncStatus.value = SyncStatus.Saving
+            repo.editNote(noteId, body).fold(
+                onSuccess = {
+                    _syncStatus.value = SyncStatus.Saved
+                    delay(2000)
+                    if (_syncStatus.value == SyncStatus.Saved) {
+                        _syncStatus.value = SyncStatus.Idle
+                    }
+                },
+                onFailure = {
+                    _syncStatus.value = SyncStatus.Error
+                },
             )
         }
     }
