@@ -160,15 +160,18 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun getEffectiveServerUrl(): String {
-        val saved = getServerUrl(getApplication())
-        if (saved.isNotBlank() && saved != com.applenotesync.app.BuildConfig.SERVER_URL) {
-            return saved
+        val prefs = getApplication<android.app.Application>()
+            .getSharedPreferences("apple_notes_sync", android.content.Context.MODE_PRIVATE)
+        val manual = prefs.getString("server_url", null)?.trim()
+        if (!manual.isNullOrBlank()) {
+            return if (manual.startsWith("http://") || manual.startsWith("https://")) manual
+                   else "http://$manual"
         }
         val discoveryState = serverDiscovery.state.value
         if (discoveryState is ServerState.Found) {
             return "http://${discoveryState.host}:${discoveryState.port}"
         }
-        return saved
+        return com.applenotesync.app.BuildConfig.SERVER_URL
     }
 
     override fun onCleared() {

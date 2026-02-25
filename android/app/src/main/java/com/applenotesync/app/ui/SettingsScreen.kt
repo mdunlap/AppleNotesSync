@@ -115,6 +115,5 @@ fun SettingsScreen(
 
 fun getServerUrl(context: Context): String {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    val saved = prefs.getString(KEY_SERVER_URL, null)
-    return if (!saved.isNullOrBlank()) saved else com.applenotesync.app.BuildConfig.SERVER_URL
+    return prefs.getString(KEY_SERVER_URL, null) ?: ""
 }

@@ -10,8 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
@@ -33,7 +31,6 @@ fun NoteDetailScreen(
 
     var editedBody by remember { mutableStateOf("") }
     var bodySeeded by remember { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(noteId) {
         viewModel.loadNoteDetail(noteId)
@@ -44,13 +41,6 @@ fun NoteDetailScreen(
         if (detailState is UiState.Success && !bodySeeded) {
             editedBody = (detailState as UiState.Success).data.body
             bodySeeded = true
-        }
-    }
-
-    // Request focus once body is seeded
-    LaunchedEffect(bodySeeded) {
-        if (bodySeeded) {
-            focusRequester.requestFocus()
         }
     }
 
@@ -148,8 +138,7 @@ fun NoteDetailScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .defaultMinSize(minHeight = 300.dp)
-                            .focusRequester(focusRequester),
+                            .defaultMinSize(minHeight = 300.dp),
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
                             lineHeight = 28.sp,
                             color = MaterialTheme.colorScheme.onSurface,
